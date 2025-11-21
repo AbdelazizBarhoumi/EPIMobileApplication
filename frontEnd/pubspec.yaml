@@ -1,0 +1,75 @@
+name: flutter_epi_university
+description: A new Flutter project.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  # The current stable Dart SDK range is kept for compatibility.
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Updated to the latest stable version (5.1.1).
+  carousel_slider: ^5.1.1
+
+  # This package is up-to-date.
+  percent_indicator: ^4.2.3
+
+  # Updated to the latest stable version (31.2.12).
+  syncfusion_flutter_charts: ^31.2.12
+
+  # This package is up-to-date.
+  cupertino_icons: ^1.0.6
+
+  google_fonts: ^4.0.3
+  provider: ^6.0.5
+  animated_notch_bottom_bar: ^1.0.0
+  flutter_svg: ^2.0.9
+  intl: ^0.19.0
+  flutter_secure_storage: ^9.0.0
+  http: ^1.1.0
+  flutter_dotenv: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Updated to the latest stable version (6.0.0) for modern lints/best practices.
+  flutter_lints: ^6.0.0
+flutter:
+
+  uses-material-design: true
+
+  # Asset paths are correct.
+  assets:
+    - assets/avatar.png
+    - assets/Banners1.jpg
+    - assets/Banners2.jpg
+    - assets/Banners3.jpg
+    - assets/Banners4.jpg
+    - assets/Banners5.jpg
+    - assets/Banners6.jpg
+    - assets/epiDigitale.jpg
+    - assets/Kampus.jpg
+    - assets/logo-epi.png
+    - .env
+
+  # Font definitions are correct.
+  fonts:
+    - family: Rowdies
+      fonts:
+        - asset: assets/Rowdies-Regular.ttf
+          style: normal
+    - family: SourceSerif
+      fonts:
+        - asset: assets/SourceSerif4_48pt-Regular.ttf
+          style: normal
+    - family: SourceSerifLight
+      fonts:
+        - asset: assets/SourceSerif4_48pt-Light.ttf
+          style: normal

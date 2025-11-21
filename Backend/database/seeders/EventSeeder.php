@@ -1,0 +1,104 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use App\Models\Event;
+use Carbon\Carbon;
+
+class EventSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $events = [
+            [
+                'title' => 'Tech Innovation Summit 2025',
+                'description' => 'Join us for the annual Technology Innovation Summit featuring keynote speakers from leading tech companies, workshops on emerging technologies, and networking opportunities with industry professionals.',
+                'category' => 'academic',
+                'event_date' => Carbon::now()->addDays(15)->setTime(9, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(15)->setTime(17, 0, 0),
+                'location' => 'Main Auditorium, Building A',
+                'organizer' => 'Computer Science Department',
+                'capacity' => 200,
+                'registered_count' => 45,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+            [
+                'title' => 'Career Fair Spring 2025',
+                'description' => 'Meet with representatives from top companies and explore internship and job opportunities. Bring your resume and dress professionally!',
+                'category' => 'career',
+                'event_date' => Carbon::now()->addDays(20)->setTime(10, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(20)->setTime(16, 0, 0),
+                'location' => 'Sports Hall',
+                'organizer' => 'Career Services Office',
+                'capacity' => 500,
+                'registered_count' => 120,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+            [
+                'title' => 'Entrepreneurship Workshop',
+                'description' => 'Learn the fundamentals of starting your own business, pitching to investors, and building a successful startup from experienced entrepreneurs.',
+                'category' => 'academic',
+                'event_date' => Carbon::now()->addDays(8)->setTime(14, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(8)->setTime(18, 0, 0),
+                'location' => 'Conference Room 301',
+                'organizer' => 'Business Administration Department',
+                'capacity' => 50,
+                'registered_count' => 32,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+            [
+                'title' => 'Cultural Festival',
+                'description' => 'Celebrate diversity with performances, food stalls, and exhibitions showcasing different cultures from around the world.',
+                'category' => 'cultural',
+                'event_date' => Carbon::now()->addDays(30)->setTime(12, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(30)->setTime(20, 0, 0),
+                'location' => 'University Plaza',
+                'organizer' => 'Student Affairs',
+                'capacity' => 1000,
+                'registered_count' => 350,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+            [
+                'title' => 'AI & Machine Learning Seminar',
+                'description' => 'Explore the latest advances in artificial intelligence and machine learning with guest speakers from research institutions and tech companies.',
+                'category' => 'academic',
+                'event_date' => Carbon::now()->addDays(12)->setTime(13, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(12)->setTime(16, 0, 0),
+                'location' => 'Lecture Hall 2',
+                'organizer' => 'AI Research Lab',
+                'capacity' => 100,
+                'registered_count' => 78,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+            [
+                'title' => 'Annual Sports Day',
+                'description' => 'Join us for a day of sports competitions, including football, basketball, volleyball, and track & field events.',
+                'category' => 'sports',
+                'event_date' => Carbon::now()->addDays(25)->setTime(8, 0, 0),
+                'event_end_date' => Carbon::now()->addDays(25)->setTime(18, 0, 0),
+                'location' => 'University Stadium',
+                'organizer' => 'Sports Department',
+                'capacity' => 800,
+                'registered_count' => 245,
+                'is_active' => true,
+                'image_url' => null,
+            ],
+        ];
+
+        foreach ($events as $eventData) {
+            Event::create($eventData);
+        }
+
+        $this->command->info('Events seeded successfully!');
+    }
+}
