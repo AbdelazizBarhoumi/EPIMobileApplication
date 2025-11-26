@@ -143,7 +143,7 @@ class Bill {
   }
 
   bool get isOverdue {
-    return status == BillStatus.pending && dueDate.isBefore(DateTime.now());
+    return dueDate.isBefore(DateTime.now()) && status != BillStatus.paid && status != BillStatus.cancelled;
   }
 
   int get daysUntilDue {

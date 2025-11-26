@@ -158,11 +158,14 @@ class ClubsPage extends StatelessWidget {
                       color: isRegistered ? Colors.green : AppColors.grey,
                     ),
                     const SizedBox(width: 5),
-                    Text(
-                      info,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isRegistered ? Colors.green : AppColors.grey,
+                    Flexible(
+                      child: Text(
+                        info,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isRegistered ? Colors.green : AppColors.grey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

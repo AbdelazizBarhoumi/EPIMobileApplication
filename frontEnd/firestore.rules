@@ -1,0 +1,73 @@
+    rules_version = '2';
+    service cloud.firestore {
+    match /databases/{database}/documents {
+        
+        // Helper function to check if user is authenticated
+        function isAuthenticated() {
+        return request.auth != null;
+        }
+        
+        // Helper function to check if user is owner
+        function isOwner(userId) {
+        return isAuthenticated() && request.auth.uid == userId;
+        }
+        
+    // Helper function to check if user is participant in conversation
+    function isParticipant(conversationData) {
+    return isAuthenticated() && 
+            request.auth.uid in conversationData.participantIds;
+    }
+    
+    // Helper function to check if user is participant in request data
+    function isParticipantInRequest() {
+    return isAuthenticated() && 
+            request.auth.uid in request.resource.data.participantIds;
+    }
+    
+    // Helper function to check if user is participant in a conversation (by checking their chats subcollection)
+    function isParticipantInConversation(conversationId) {
+    return isAuthenticated() && 
+            exists(/databases/$(database)/documents/chats/$(request.auth.uid)/conversations/$(conversationId));
+    }
+    
+    // Notifications - Users can only access their own notifications
+    match /notifications/{userId}/items/{notificationId} {
+    allow read: if isOwner(userId);
+    allow create, update: if isOwner(userId);
+    allow delete: if isOwner(userId);
+    }
+    
+    // Chat conversations - Users can access their own OR if they're in participantIds
+    // TEMPORARY: Open for testing - REMOVE IN PRODUCTION!
+    match /chats/{userId}/conversations/{conversationId} {
+      allow read, write: if true;  // ⚠️ TESTING ONLY
+    }
+    
+    // Messages - Only conversation participants can read/write messages
+    // TEMPORARY: Open for testing - REMOVE IN PRODUCTION!
+    match /messages/{conversationId}/messages/{messageId} {
+      allow read, write: if true;  // ⚠️ TESTING ONLY
+    }
+    
+    // Typing indicators - Only conversation participants can read/write
+    match /typing/{conversationId}/users/{userId} {
+    allow read: if isParticipantInConversation(conversationId);
+    allow write: if isAuthenticated() && isOwner(userId) && isParticipantInConversation(conversationId);
+    }        // User profiles - Users can read any profile but only write their own
+        match /users/{userId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+        }
+        
+        // TEMPORARY: Allow reading oneSignalPlayerId for testing notifications (unauthenticated)
+        match /users/{userId} {
+        allow read: if true;  // ⚠️ TESTING ONLY - REMOVE IN PRODUCTION!
+        }
+        
+        // Deny all other access by default
+        match /{document=**} {
+        allow read, write: if false;
+        }
+    }
+    }

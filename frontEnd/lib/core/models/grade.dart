@@ -3,7 +3,7 @@
 // ============================================================================
 
 class Grade {
-  final int courseId;
+  final int? courseId;
   final String courseCode;
   final String courseName;
   final int credits;
@@ -20,7 +20,7 @@ class Grade {
   final int? semesterTaken;
 
   Grade({
-    required this.courseId,
+    this.courseId,
     required this.courseCode,
     required this.courseName,
     required this.credits,
@@ -39,21 +39,21 @@ class Grade {
 
   factory Grade.fromJson(Map<String, dynamic> json) {
     return Grade(
-      courseId: json['course_id'] as int,
+      courseId: json['course_id'] != null ? json['course_id'] as int : null,
       courseCode: json['course_code'] as String,
       courseName: json['course_name'] as String,
-      credits: json['credits'] as int,
-      ccScore: json['cc_score'] != null ? (json['cc_score'] as num).toDouble() : null,
-      dsScore: json['ds_score'] != null ? (json['ds_score'] as num).toDouble() : null,
-      examScore: json['exam_score'] != null ? (json['exam_score'] as num).toDouble() : null,
-      ccWeight: json['cc_weight'] as int?,
-      dsWeight: json['ds_weight'] as int?,
-      examWeight: json['exam_weight'] as int?,
-      finalGrade: json['final_grade'] != null ? (json['final_grade'] as num).toDouble() : null,
+      credits: json['credits'] is int ? json['credits'] : int.parse(json['credits'].toString()),
+      ccScore: json['cc_score'] != null ? (json['cc_score'] is num ? json['cc_score'].toDouble() : double.tryParse(json['cc_score'].toString())) : null,
+      dsScore: json['ds_score'] != null ? (json['ds_score'] is num ? json['ds_score'].toDouble() : double.tryParse(json['ds_score'].toString())) : null,
+      examScore: json['exam_score'] != null ? (json['exam_score'] is num ? json['exam_score'].toDouble() : double.tryParse(json['exam_score'].toString())) : null,
+      ccWeight: json['cc_weight'] != null ? (json['cc_weight'] is int ? json['cc_weight'] : int.tryParse(json['cc_weight'].toString())) : null,
+      dsWeight: json['ds_weight'] != null ? (json['ds_weight'] is int ? json['ds_weight'] : int.tryParse(json['ds_weight'].toString())) : null,
+      examWeight: json['exam_weight'] != null ? (json['exam_weight'] is int ? json['exam_weight'] : int.tryParse(json['exam_weight'].toString())) : null,
+      finalGrade: json['final_grade'] != null ? (json['final_grade'] is num ? json['final_grade'].toDouble() : double.tryParse(json['final_grade'].toString())) : null,
       letterGrade: json['letter_grade'] as String?,
       status: json['status'] as String?,
-      yearTaken: json['year_taken'] as int?,
-      semesterTaken: json['semester_taken'] as int?,
+      yearTaken: json['year_taken'] != null ? (json['year_taken'] is int ? json['year_taken'] : int.tryParse(json['year_taken'].toString())) : null,
+      semesterTaken: json['semester_taken'] != null ? (json['semester_taken'] is int ? json['semester_taken'] : int.tryParse(json['semester_taken'].toString())) : null,
     );
   }
 
@@ -95,11 +95,11 @@ class SemesterTranscript {
 
   factory SemesterTranscript.fromJson(Map<String, dynamic> json) {
     return SemesterTranscript(
-      semester: json['semester'] as int,
+      semester: json['semester'] is int ? json['semester'] : int.parse(json['semester'].toString()),
       courses: (json['courses'] as List)
           .map((course) => Grade.fromJson(course as Map<String, dynamic>))
           .toList(),
-      semesterCredits: json['semester_credits'] as int,
+      semesterCredits: json['semester_credits'] is int ? json['semester_credits'] : int.parse(json['semester_credits'].toString()),
     );
   }
 }
@@ -117,11 +117,11 @@ class YearTranscript {
 
   factory YearTranscript.fromJson(Map<String, dynamic> json) {
     return YearTranscript(
-      year: json['year'] as int,
+      year: json['year'] is int ? json['year'] : int.parse(json['year'].toString()),
       semesters: (json['semesters'] as List)
           .map((sem) => SemesterTranscript.fromJson(sem as Map<String, dynamic>))
           .toList(),
-      yearGpa: json['year_gpa'] != null ? (json['year_gpa'] as num).toDouble() : null,
+      yearGpa: json['year_gpa'] != null ? (json['year_gpa'] is num ? json['year_gpa'].toDouble() : double.tryParse(json['year_gpa'].toString())) : null,
     );
   }
 }
@@ -132,9 +132,9 @@ class Transcript {
   final String? majorName;
   final int currentYear;
   final List<YearTranscript> transcript;
-  final double overallGpa;
-  final int creditsTaken;
-  final int creditsRemaining;
+  final double? overallGpa;
+  final int? creditsTaken;
+  final int? creditsRemaining;
 
   Transcript({
     required this.studentId,
@@ -142,9 +142,9 @@ class Transcript {
     this.majorName,
     required this.currentYear,
     required this.transcript,
-    required this.overallGpa,
-    required this.creditsTaken,
-    required this.creditsRemaining,
+    this.overallGpa,
+    this.creditsTaken,
+    this.creditsRemaining,
   });
 
   factory Transcript.fromJson(Map<String, dynamic> json) {
@@ -152,16 +152,16 @@ class Transcript {
     final student = data['student'] as Map<String, dynamic>;
     
     return Transcript(
-      studentId: student['id'] as int,
+      studentId: student['id'] is int ? student['id'] : int.parse(student['id'].toString()),
       studentName: student['name'] as String,
       majorName: student['major'] as String?,
-      currentYear: student['current_year'] as int,
+      currentYear: student['current_year'] is int ? student['current_year'] : int.parse(student['current_year'].toString()),
       transcript: (data['transcript'] as List)
           .map((year) => YearTranscript.fromJson(year as Map<String, dynamic>))
           .toList(),
-      overallGpa: (data['overall_gpa'] as num).toDouble(),
-      creditsTaken: data['credits_taken'] as int,
-      creditsRemaining: data['credits_remaining'] as int,
+      overallGpa: data['overall_gpa'] != null ? (data['overall_gpa'] is num ? data['overall_gpa'].toDouble() : double.tryParse(data['overall_gpa'].toString())) : null,
+      creditsTaken: data['credits_taken'] != null ? (data['credits_taken'] is int ? data['credits_taken'] : int.tryParse(data['credits_taken'].toString())) : null,
+      creditsRemaining: data['credits_remaining'] != null ? (data['credits_remaining'] is int ? data['credits_remaining'] : int.tryParse(data['credits_remaining'].toString())) : null,
     );
   }
 }

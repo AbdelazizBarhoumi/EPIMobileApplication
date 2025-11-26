@@ -2,6 +2,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../api_client.dart';
 import '../services/auth_service.dart';
 import '../services/student_service.dart';
@@ -14,6 +15,8 @@ import '../services/news_service.dart';
 import '../services/club_service.dart';
 import '../services/event_service.dart';
 import '../services/major_service.dart';
+import '../services/teacher_service.dart';
+import '../services/academic_calendar_service.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/student_controller.dart';
 import '../controllers/grade_controller.dart';
@@ -24,10 +27,14 @@ import '../controllers/attendance_controller.dart';
 import '../controllers/news_controller.dart';
 import '../controllers/club_controller.dart';
 import '../controllers/event_controller.dart';
+import '../controllers/academic_calendar_controller.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart' as auth_feature;
 import '../../features/profile/data/repositories/profile_repository.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
+import '../../features/chat/data/repositories/chat_repository.dart';
+import '../../features/chat/data/services/presence_service.dart';
+import '../services/onesignal_service.dart';
 
 class ApiProvider {
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
@@ -77,6 +84,12 @@ class ApiProvider {
     ),
     ProxyProvider<ApiClient, MajorService>(
       update: (_, apiClient, __) => MajorService(apiClient),
+    ),
+    ProxyProvider<ApiClient, TeacherService>(
+      update: (_, apiClient, __) => TeacherService(apiClient),
+    ),
+    ProxyProvider<ApiClient, AcademicCalendarService>(
+      update: (_, apiClient, __) => AcademicCalendarService(apiClient),
     ),
 
     // Feature-specific repositories
@@ -130,6 +143,10 @@ class ApiProvider {
       create: (context) => EventController(context.read<EventService>()),
       update: (_, service, controller) => controller ?? EventController(service),
     ),
+    ChangeNotifierProxyProvider<AcademicCalendarService, AcademicCalendarController>(
+      create: (context) => AcademicCalendarController(context.read<AcademicCalendarService>()),
+      update: (_, service, controller) => controller ?? AcademicCalendarController(service),
+    ),
 
     // Feature-specific controllers
     ChangeNotifierProxyProvider<AuthRepository, auth_feature.AuthController>(
@@ -139,6 +156,20 @@ class ApiProvider {
     ChangeNotifierProxyProvider<ProfileRepository, ProfileController>(
       create: (context) => ProfileController(context.read<ProfileRepository>()),
       update: (_, profileRepository, profileController) => profileController ?? ProfileController(profileRepository),
+    ),
+    
+    // Chat providers
+    Provider<OneSignalService>(
+      create: (context) => OneSignalService(),
+    ),
+    Provider<ChatRepository>(
+      create: (context) => FirebaseChatRepository(
+        FirebaseFirestore.instance,
+        context.read<OneSignalService>(),
+      ),
+    ),
+    Provider<PresenceService>(
+      create: (context) => PresenceService(),
     ),
   ];
 }

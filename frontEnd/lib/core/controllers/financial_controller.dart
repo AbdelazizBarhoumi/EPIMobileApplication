@@ -85,7 +85,7 @@ class FinancialController extends ChangeNotifier {
     }
   }
 
-  List<Bill> get pendingBills => _bills.where((b) => b.status == BillStatus.pending).toList();
+  List<Bill> get pendingBills => _bills.where((b) => b.status == BillStatus.pending && !b.isOverdue).toList();
   List<Bill> get paidBills => _bills.where((b) => b.status == BillStatus.paid).toList();
   List<Bill> get overdueBills => _bills.where((b) => b.isOverdue).toList();
 

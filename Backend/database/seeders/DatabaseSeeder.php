@@ -19,8 +19,10 @@ class DatabaseSeeder extends Seeder
             RoomSeeder::class,
             ProgramCourseSeeder::class,
             ScheduleSeeder::class,
+            JohnDoeScheduleSeeder::class,
             StudentSeeder::class,
             StudentGradeSeeder::class,
+            JohnDoeFullDataSeeder::class,
             ClubSeeder::class,
             NewsSeeder::class,
         ]);

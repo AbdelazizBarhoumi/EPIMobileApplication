@@ -18,10 +18,12 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
   @override
   void initState() {
     super.initState();
+    debugPrint('CoursesPageDynamic: Initializing courses page');
     _loadData();
   }
 
   void _loadData() {
+    debugPrint('CoursesPageDynamic: Loading courses data');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CourseController>().loadStudentCourses();
     });
@@ -44,14 +46,20 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _loadData,
+            onPressed: () {
+              debugPrint('CoursesPageDynamic: Refresh button pressed');
+              _loadData();
+            },
           ),
         ],
       ),
       body: Consumer<CourseController>(
         builder: (context, controller, child) {
+          debugPrint('CoursesPageDynamic: Building with state: ${controller.state}, courses: ${controller.courses.length}');
+
           // Loading state
           if (controller.state == CourseLoadingState.loading) {
+            debugPrint('CoursesPageDynamic: Showing loading state');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -66,6 +74,7 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
 
           // Error state
           if (controller.state == CourseLoadingState.error) {
+            debugPrint('CoursesPageDynamic: Showing error state - ${controller.errorMessage}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -93,6 +102,7 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
           // No data
           final courses = controller.courses;
           if (courses.isEmpty) {
+            debugPrint('CoursesPageDynamic: No courses available');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -107,15 +117,18 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
 
           // Calculate stats
           final totalCredits = courses.fold<int>(0, (sum, course) => sum + course.credits);
+          debugPrint('CoursesPageDynamic: Total credits: $totalCredits');
           double totalGradePoints = 0.0;
           int coursesWithGrades = 0;
           for (var course in courses) {
             if (course.finalGrade != null) {
               totalGradePoints += course.finalGrade! * course.credits;
               coursesWithGrades++;
+              debugPrint('CoursesPageDynamic: Course ${course.courseCode} grade: ${course.finalGrade}');
             }
           }
           final avgGrade = coursesWithGrades > 0 ? totalGradePoints / totalCredits : 0.0;
+          debugPrint('CoursesPageDynamic: Average grade: ${avgGrade.toStringAsFixed(1)}% from $coursesWithGrades courses with grades');
 
           return Column(
             children: [
@@ -147,7 +160,10 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: courses.length,
-                  itemBuilder: (context, index) => _buildCourseCard(courses[index], index),
+                  itemBuilder: (context, index) {
+                    debugPrint('CoursesPageDynamic: Building course card for ${courses[index].courseCode} at index $index');
+                    return _buildCourseCard(courses[index], index);
+                  },
                 ),
               ),
             ],
@@ -177,13 +193,17 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
     final color = colors[index % colors.length];
     final totalGrade = course.finalGrade ?? 0.0;
     final gradeColor = _getGradeColor(totalGrade);
+    debugPrint('CoursesPageDynamic: Building card for ${course.courseCode} - grade: ${totalGrade.toStringAsFixed(1)}%, hasAllScores: ${course.hasAllScores}');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
-        onTap: () => _showCourseDetails(course, color),
+        onTap: () {
+          debugPrint('CoursesPageDynamic: Course card tapped - ${course.courseCode}');
+          _showCourseDetails(course, color);
+        },
         borderRadius: BorderRadius.circular(15),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -238,11 +258,11 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildGradeComponent("CC", course.ccWeight ?? 30, course.ccScore ?? 0, Colors.blue)),
+                    Expanded(child: _buildGradeComponent("CC", course.ccWeight, course.ccScore ?? 0, Colors.blue)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildGradeComponent("DS", course.dsWeight ?? 20, course.dsScore ?? 0, Colors.orange)),
+                    Expanded(child: _buildGradeComponent("DS", course.dsWeight, course.dsScore ?? 0, Colors.orange)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildGradeComponent("Exam", course.examWeight ?? 40, course.examScore ?? 0, Colors.red)),
+                    Expanded(child: _buildGradeComponent("Exam", course.examWeight, course.examScore ?? 0, Colors.red)),
                   ],
                 ),
               ],
@@ -269,6 +289,7 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
   }
 
   Color _getGradeColor(double grade) {
+    debugPrint('CoursesPageDynamic: Getting color for grade ${grade.toStringAsFixed(1)}%');
     if (grade >= 90) return Colors.green;
     if (grade >= 80) return Colors.blue;
     if (grade >= 70) return Colors.orange;
@@ -276,8 +297,10 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
   }
 
   void _showCourseDetails(Course course, Color color) {
+    debugPrint('CoursesPageDynamic: Showing details for course ${course.courseCode}');
     final totalGrade = course.finalGrade ?? 0.0;
     final gradeColor = _getGradeColor(totalGrade);
+    debugPrint('CoursesPageDynamic: Course ${course.courseCode} details - final grade: ${totalGrade.toStringAsFixed(1)}%, letter: ${course.letterGrade}, hasAllScores: ${course.hasAllScores}');
 
     showModalBottomSheet(
       context: context,
@@ -302,43 +325,53 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
                   Text("${course.courseCode} • ${course.credits} Credits", style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                   const SizedBox(height: 24),
                   if (course.finalGrade != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [gradeColor.withOpacity(0.7), gradeColor]),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text("Final Grade", style: TextStyle(color: Colors.white, fontSize: 18)),
-                          const SizedBox(height: 12),
-                          Text("${totalGrade.toStringAsFixed(1)}%", style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold)),
-                          Text(course.letterGrade ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
+                    () {
+                      return Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [gradeColor.withOpacity(0.7), gradeColor]),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text("Final Grade", style: TextStyle(color: Colors.white, fontSize: 18)),
+                            const SizedBox(height: 12),
+                            Text("${totalGrade.toStringAsFixed(1)}%", style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold)),
+                            Text(course.letterGrade ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      );
+                    }(),
                     if (course.hasAllScores) ...[
                       const SizedBox(height: 24),
                       Text("Grade Breakdown", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red[900])),
                       const SizedBox(height: 16),
-                      _buildDetailedComponent("CC (Continuous Control)", course.ccScore ?? 0, course.ccWeight, Colors.blue),
-                      const SizedBox(height: 16),
-                      _buildDetailedComponent("DS (Devoir Surveillé)", course.dsScore ?? 0, course.dsWeight, Colors.orange),
-                      const SizedBox(height: 16),
-                      _buildDetailedComponent("Final Exam", course.examScore ?? 0, course.examWeight, Colors.red),
+                      () {
+                        return Column(
+                          children: [
+                            _buildDetailedComponent("CC (Continuous Control)", course.ccScore ?? 0, course.ccWeight, Colors.blue),
+                            const SizedBox(height: 16),
+                            _buildDetailedComponent("DS (Devoir Surveillé)", course.dsScore ?? 0, course.dsWeight, Colors.orange),
+                            const SizedBox(height: 16),
+                            _buildDetailedComponent("Final Exam", course.examScore ?? 0, course.examWeight, Colors.red),
+                          ],
+                        );
+                      }(),
                     ],
                   ] else ...[
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(20)),
-                      child: Column(
-                        children: [
-                          Icon(Icons.info_outline, size: 64, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text("Grades not available yet", style: TextStyle(fontSize: 18, color: Colors.grey[600])),
-                        ],
-                      ),
-                    ),
+                    () {
+                      return Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(20)),
+                        child: Column(
+                          children: [
+                            Icon(Icons.info_outline, size: 64, color: Colors.grey[400]),
+                            const SizedBox(height: 16),
+                            Text("Grades not available yet", style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+                          ],
+                        ),
+                      );
+                    }(),
                   ],
                 ],
               ),
@@ -350,6 +383,7 @@ class _CoursesPageDynamicState extends State<CoursesPageDynamic> {
   }
 
   Widget _buildDetailedComponent(String title, double score, int weight, Color color) {
+    debugPrint('CoursesPageDynamic: Building detailed component - $title: ${score.toStringAsFixed(0)}% (weight: $weight%), contributes: ${(score * weight / 100).toStringAsFixed(1)}%');
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[300]!)),

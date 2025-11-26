@@ -12,7 +12,7 @@ import 'pages/clubs_page.dart';
 import 'pages/grades_page_dynamic.dart';
 import 'pages/schedule_page_dynamic.dart';
 import 'pages/absences_page_dynamic.dart';
-import 'pages/bills_page_dynamic.dart';
+import 'pages/bills_page_enhanced.dart';
 import 'pages/activities_page.dart';
 import 'pages/payment_page.dart';
 import 'pages/search_page.dart';
@@ -20,7 +20,7 @@ import 'pages/notifications_page.dart';
 import 'pages/news_page.dart';
 import 'pages/year_schedule_page.dart';
 import 'pages/courses_page_dynamic.dart';
-import 'pages/chat_page.dart';
+import 'features/chat/presentation/pages/chat_list_page.dart';
 // Import controllers and models
 import 'core/controllers/event_controller.dart';
 import 'core/controllers/student_controller.dart';
@@ -28,10 +28,9 @@ import 'core/controllers/financial_controller.dart';
 import 'core/controllers/schedule_controller.dart';
 import 'core/controllers/course_controller.dart';
 import 'core/models/event.dart';
-import 'core/models/student.dart';
 import 'core/models/schedule.dart';
-import 'core/models/course.dart';
 import 'shared/widgets/shimmer_loading.dart';
+import 'core/firebase/firebase_service.dart';
 
 // ============================================================================
 // HOMEPAGE WIDGET - Main Application Dashboard
@@ -58,14 +57,8 @@ class _HomePageState extends State<HomePage> {
     "assets/Banners6.jpg",
   ];
 
-  /// Current carousel index
-  int _currentIndex = 0;
-
   /// Bottom navigation bar controller
   final NotchBottomBarController _controller = NotchBottomBarController();
-
-  /// Selected bottom navigation index
-  int _selectedNavbar = 0;
 
   @override
   void initState() {
@@ -159,6 +152,47 @@ class _HomePageState extends State<HomePage> {
         } else {
           print('  ❌ FINAL FAILURE after $maxAttempts attempts: $e');
         }
+      }
+    }
+  }
+
+  /// Test notification functionality
+  void _testNotification() async {
+    try {
+      // Test Firebase Messaging Service
+      final messagingService = FirebaseService.instance.messaging;
+      
+      if (messagingService != null) {
+        // Test if messaging service is available
+        final token = await messagingService.getToken();
+        debugPrint('FCM Token: $token');
+        
+        // Test local notification
+        await messagingService.showTestNotification(
+          '💬 New Chat Message',
+          'Dr. Ahmed Ben Ali: The assignment deadline has been extended to next week.',
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🔔 Test notification sent! Check your notification panel.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        throw Exception('Firebase Messaging not available on this platform');
+      }
+    } catch (e) {
+      debugPrint('❌ Notification test failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Notification failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -305,8 +339,12 @@ class _HomePageState extends State<HomePage> {
       // ========================================================================
       // SECTION 2: BODY - Main Content Area
       // ========================================================================
-      body: ListView(
-        children: [
+      body: RefreshIndicator(
+        onRefresh: _loadDataWithRetry,
+        color: Colors.red[900],
+        backgroundColor: Colors.white,
+        child: ListView(
+          children: [
           // --------------------------------------------------------------------
           // BLOCK 2.1: Curved Background Header
           // --------------------------------------------------------------------
@@ -489,7 +527,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
 
           // --------------------------------------------------------------------
-          // BLOCK 2.3: Next Class Card - Dynamic from Schedule
+          // BLOCK 2.3: Current/Next Class Card - Dynamic from Schedule
           // --------------------------------------------------------------------
           Consumer<ScheduleController>(
             builder: (context, scheduleController, child) {
@@ -497,7 +535,8 @@ class _HomePageState extends State<HomePage> {
               final isLoading = schedule == null;
               final now = DateTime.now();
               
-              // Find next upcoming session from today's schedule
+              // Find current or next upcoming session from today's schedule
+              ScheduleSession? currentSession;
               ScheduleSession? nextSession;
               if (schedule != null) {
                 // Get day name
@@ -505,28 +544,39 @@ class _HomePageState extends State<HomePage> {
                 final todayName = dayNames[now.weekday];
                 final todaySessions = schedule.schedule[todayName] ?? [];
                 
-                // Find next session after current time
+                // Find current session (if now is within its time) or next upcoming
                 for (var session in todaySessions) {
-                  final sessionTime = DateTime(now.year, now.month, now.day, 
+                  final startTime = DateTime(now.year, now.month, now.day, 
                     int.parse(session.startTime.split(':')[0]),
                     int.parse(session.startTime.split(':')[1]));
+                  final endTime = DateTime(now.year, now.month, now.day, 
+                    int.parse(session.endTime.split(':')[0]),
+                    int.parse(session.endTime.split(':')[1]));
                   
-                  if (sessionTime.isAfter(now)) {
-                    nextSession = session;
-                    break;
+                  if (now.isAfter(startTime) && now.isBefore(endTime)) {
+                    currentSession = session;
+                  } else if (now.isBefore(startTime)) {
+                    if (nextSession == null) {
+                      nextSession = session;
+                    } else {
+                      final nextStart = DateTime(now.year, now.month, now.day, 
+                        int.parse(nextSession.startTime.split(':')[0]),
+                        int.parse(nextSession.startTime.split(':')[1]));
+                      if (startTime.isBefore(nextStart)) {
+                        nextSession = session;
+                      }
+                    }
                   }
                 }
               }
+              
+              final displaySession = currentSession ?? nextSession;
               
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 child: InkWell(
                   onTap: () {
-                    if (nextSession != null) {
-                      _showLectureDetails(nextSession);
-                    } else {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SchedulePageDynamic()));
-                    }
+                    _showLectureDetails(displaySession);
                   },
                   borderRadius: BorderRadius.circular(15),
                   child: Container(
@@ -566,9 +616,9 @@ class _HomePageState extends State<HomePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                "Next Class",
-                                style: TextStyle(
+                              Text(
+                                currentSession != null ? "Current Class" : "Next Class",
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 12,
                                 ),
@@ -577,14 +627,14 @@ class _HomePageState extends State<HomePage> {
                               isLoading
                                   ? const ShimmerText(width: 150, height: 16)
                                   : Text(
-                                      nextSession?.courseName ?? "No upcoming class today",
+                                      displaySession?.courseName ?? "No class scheduled for today",
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                              if (!isLoading && nextSession != null) ...[
+                              if (!isLoading && displaySession != null) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
@@ -595,7 +645,7 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      "${nextSession.startTime} - ${nextSession.endTime}",
+                                      "${displaySession.startTime} - ${displaySession.endTime}",
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 12,
@@ -614,7 +664,7 @@ class _HomePageState extends State<HomePage> {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        "Room ${nextSession.room ?? 'TBA'}",
+                                        "Room ${displaySession.room ?? 'TBA'}",
                                         style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -733,7 +783,7 @@ class _HomePageState extends State<HomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const BillsPageDynamic()),
+                              builder: (context) => BillsPageEnhanced()),
                         );
                       },
                     ),
@@ -841,7 +891,7 @@ class _HomePageState extends State<HomePage> {
                     scrollDirection: Axis.horizontal,
                     autoPlayInterval: const Duration(seconds: 5),
                     autoPlayAnimationDuration: const Duration(milliseconds: 2000),
-                    onPageChanged: (index, reason) => setState(() => _currentIndex = index),
+                    onPageChanged: (index, reason) => {}, // Remove unused index tracking
                   ),
                   items: imageList.asMap().entries.map((entry) => GestureDetector(
                     onTap: () {
@@ -877,7 +927,7 @@ class _HomePageState extends State<HomePage> {
                   scrollDirection: Axis.horizontal,
                   autoPlayInterval: const Duration(seconds: 5),
                   autoPlayAnimationDuration: const Duration(milliseconds: 2000),
-                  onPageChanged: (index, reason) => setState(() => _currentIndex = index),
+                  onPageChanged: (index, reason) => {}, // Remove unused index tracking
                 ),
                 items: events.map((event) => GestureDetector(
                   onTap: () {
@@ -1190,8 +1240,65 @@ class _HomePageState extends State<HomePage> {
           ),
 
           const SizedBox(height: 20),
+
+          // ====================================================================
+          // BLOCK 2.9: Firebase Test Button (Development Only)
+          // ====================================================================
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/firebase-test');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.bug_report, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Test Firebase Connection',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Test Notification Button
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: ElevatedButton.icon(
+              onPressed: _testNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+              icon: const Icon(Icons.notifications_active),
+              label: const Text('🔔 Test Chat Notification'),
+            ),
+          ),
+
+          const SizedBox(height: 20),
         ]))
         ],
+      ),
       ),
       extendBody: false, //make  true  for transparency
       // ========================================================================
@@ -1201,10 +1308,6 @@ class _HomePageState extends State<HomePage> {
         notchBottomBarController: _controller,
         bottomBarItems: bottomBarItems,
         onTap: (index) {
-          setState(() {
-            _selectedNavbar = index;
-          });
-
           if (index == 1) {
             Navigator.push(
               context,
@@ -1224,7 +1327,7 @@ class _HomePageState extends State<HomePage> {
           } else if (index == 4) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ChatPage()),
+              MaterialPageRoute(builder: (context) => const ChatListPage()),
             );
           }
         },
@@ -1288,269 +1391,281 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDeadlineItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
-      ],
-    );
-  }
-
-  void _showLectureDetails(ScheduleSession session) {
+  void _showLectureDetails(ScheduleSession? session) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) {
+        if (session == null) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.4,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
             ),
-
-            // Content
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  // Course Header
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.red[700]!, Colors.red[900]!],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: const Icon(
-                          Icons.book,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              session.courseName,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red[900],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "${session.courseCode} - ${session.instructor ?? 'Instructor TBA'}",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Lecture Info Cards
-                  _buildInfoCard(
-                    icon: Icons.access_time,
-                    title: "Time",
-                    content: "${session.dayOfWeek}, ${session.startTime} - ${session.endTime}",
-                    color: Colors.blue,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.business,
-                    title: "Building",
-                    content: "Main Campus",
-                    color: Colors.purple,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.room,
-                    title: "Room",
-                    content: "Room ${session.room ?? 'TBA'}",
-                    color: Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.topic,
-                    title: "Session Type",
-                    content: session.sessionType ?? "Lecture",
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Quick Actions Section
-                  Text(
-                    "Quick Actions",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red[900],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Action Buttons Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.description,
-                          label: "Materials",
-                          color: Colors.purple,
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Opening course materials...')),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.chat_bubble,
-                          label: "Chat",
-                          color: Colors.blue,
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Opening course chat...')),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.calendar_today,
-                          label: "Schedule",
-                          color: Colors.green,
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const SchedulePageDynamic()),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.assignment,
-                          label: "Assignments",
-                          color: Colors.orange,
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const ActivitiesPage()),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Additional Info
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Row(
+                ),
+                const Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue[700]),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "Don't forget to bring your laptop for practical exercises",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.blue[900],
-                            ),
+                        Icon(
+                          Icons.schedule,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "No Upcoming Classes",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Check your schedule for future classes",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          );
+        }
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Content
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Course Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.red[700]!, Colors.red[900]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Icon(
+                            Icons.book,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                session.courseName,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[900],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${session.courseCode} - ${session.instructor ?? 'Instructor TBA'}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Lecture Info Cards
+                    _buildInfoCard(
+                      icon: Icons.access_time,
+                      title: "Time",
+                      content: "${session.dayOfWeek}, ${session.startTime} - ${session.endTime}",
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      icon: Icons.business,
+                      title: "Building",
+                      content: "Main Campus",
+                      color: Colors.purple,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      icon: Icons.room,
+                      title: "Room",
+                      content: "Room ${session.room ?? 'TBA'}",
+                      color: Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoCard(
+                      icon: Icons.topic,
+                      title: "Session Type",
+                      content: session.sessionType ?? "Lecture",
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Quick Actions Section
+                    Text(
+                      "Quick Actions",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[900],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Action Buttons Grid
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.description,
+                            label: "Materials",
+                            color: Colors.purple,
+                            onTap: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Opening course materials...')),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.chat_bubble,
+                            label: "Chat",
+                            color: Colors.blue,
+                            onTap: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Opening course chat...')),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.calendar_today,
+                            label: "Schedule",
+                            color: Colors.green,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const SchedulePageDynamic()),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.assignment,
+                            label: "Assignments",
+                            color: Colors.orange,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const ActivitiesPage()),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Additional Info
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue[700]),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "Don't forget to bring your laptop for practical exercises",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue[900],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

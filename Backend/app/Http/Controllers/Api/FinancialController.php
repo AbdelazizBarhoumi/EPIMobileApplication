@@ -31,9 +31,9 @@ class FinancialController extends Controller
             'success' => true,
             'data' => [
                 'bills' => $bills,
-                'total_pending' => $bills->where('status', 'pending')->sum('amount'),
+                'total_pending' => $bills->where('due_date', '>', now())->whereNotIn('status', ['paid', 'cancelled'])->sum('amount'),
                 'total_paid' => $bills->where('status', 'paid')->sum('amount'),
-                'total_overdue' => $bills->where('status', 'overdue')->sum('amount'),
+                'total_overdue' => $bills->where('due_date', '<=', now())->whereNotIn('status', ['paid', 'cancelled'])->sum('amount'),
             ],
         ]);
     }
@@ -145,19 +145,35 @@ class FinancialController extends Controller
     {
         $student = $request->user()->student;
 
-        $totalBills = $student->bills()->sum('amount');
-        $totalPaid = $student->payments()->sum('amount');
-        $pendingBills = $student->bills()->where('status', 'pending')->sum('amount');
-        $overdueBills = $student->bills()->where('status', 'overdue')->sum('amount');
+        // Get all bills
+        $allBills = $student->bills();
+
+        // Calculate totals
+        $totalBills = $allBills->sum('amount');
+        $totalPaid = $allBills->where('status', 'paid')->sum('amount');
+
+        // Pending bills: not overdue, not paid, not cancelled
+        $pendingBills = $allBills->where('due_date', '>', now())
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->sum('amount');
+
+        // Overdue bills: overdue and not paid/cancelled
+        $overdueBills = $allBills->where('due_date', '<=', now())
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->sum('amount');
+
+        // Paid bills
+        $paidBills = $allBills->where('status', 'paid')->sum('amount');
 
         return response()->json([
             'success' => true,
             'data' => [
-                'tuition_fees' => $student->tuition_fees,
+                'tuition_fees' => $student->tuition_fees ?? 0,
                 'total_bills' => $totalBills,
                 'total_paid' => $totalPaid,
-                'pending_bills' => $pendingBills,
-                'overdue_bills' => $overdueBills,
+                'pending_bills' => $allBills->where('due_date', '>', now())->whereNotIn('status', ['paid', 'cancelled'])->count(),
+                'overdue_bills' => $allBills->where('due_date', '<=', now())->whereNotIn('status', ['paid', 'cancelled'])->count(),
+                'paid_bills' => $allBills->where('status', 'paid')->count(),
                 'outstanding_balance' => $student->outstanding_balance,
             ],
         ]);

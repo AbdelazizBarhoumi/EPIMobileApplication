@@ -98,7 +98,7 @@ class AppTheme {
       ),
 
       // Scaffold Background
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: Colors.red[50],
 
       // Divider Theme
       dividerTheme: DividerThemeData(

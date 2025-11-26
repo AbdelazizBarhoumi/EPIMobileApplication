@@ -178,11 +178,11 @@ class Student extends Model
     }
 
     /**
-     * Get outstanding balance (pending bills).
+     * Get outstanding balance (pending and overdue bills).
      */
     public function getOutstandingBalanceAttribute(): float
     {
-        return $this->bills()->where('status', 'pending')->sum('amount');
+        return $this->bills()->whereNotIn('status', ['paid', 'cancelled'])->sum('amount');
     }
 
     /**

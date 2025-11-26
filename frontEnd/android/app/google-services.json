@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "67907098202",
+    "project_id": "epimobileapplication-14233",
+    "storage_bucket": "epimobileapplication-14233.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:67907098202:android:f8bc28435a01e23fae6a63",
+        "android_client_info": {
+          "package_name": "com.epi.mobileApplicaition"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6kx0jX0Jtp2EqSxQUnl2_-yIy4OeqYko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

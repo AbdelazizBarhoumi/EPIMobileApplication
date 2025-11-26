@@ -95,7 +95,7 @@ class JohnDoeFullDataSeeder extends Seeder
                 'description' => 'Dormitory Fee - Fall 2024',
                 'amount' => 2000.00,
                 'due_date' => Carbon::now()->subDays(10), // Overdue
-                'status' => 'overdue',
+                'status' => 'pending', // Let frontend determine overdue based on date
             ],
         ];
 
@@ -299,7 +299,7 @@ class JohnDoeFullDataSeeder extends Seeder
                 'name' => 'Computer Science Club',
                 'description' => 'A club for CS students to collaborate on projects and learn together',
                 'category' => 'academic',
-                'advisor' => 'Dr. Sarah Johnson',
+                'president_name' => 'Dr. Sarah Johnson',
                 'meeting_schedule' => 'Every Thursday at 4 PM',
                 'member_count' => 45,
                 'is_active' => true,
@@ -307,8 +307,8 @@ class JohnDoeFullDataSeeder extends Seeder
             [
                 'name' => 'Robotics Club',
                 'description' => 'Build and compete with robots',
-                'category' => 'technical',
-                'advisor' => 'Prof. Michael Chen',
+                'category' => 'technology',
+                'president_name' => 'Prof. Michael Chen',
                 'meeting_schedule' => 'Tuesdays and Fridays at 3 PM',
                 'member_count' => 32,
                 'is_active' => true,
@@ -317,7 +317,7 @@ class JohnDoeFullDataSeeder extends Seeder
                 'name' => 'Debate Society',
                 'description' => 'Improve public speaking and critical thinking skills',
                 'category' => 'social',
-                'advisor' => 'Dr. Emily Brown',
+                'president_name' => 'Dr. Emily Brown',
                 'meeting_schedule' => 'Wednesdays at 5 PM',
                 'member_count' => 28,
                 'is_active' => true,
@@ -326,7 +326,7 @@ class JohnDoeFullDataSeeder extends Seeder
                 'name' => 'Photography Club',
                 'description' => 'Explore the art of photography',
                 'category' => 'arts',
-                'advisor' => 'Ms. Lisa Anderson',
+                'president_name' => 'Ms. Lisa Anderson',
                 'meeting_schedule' => 'Weekends',
                 'member_count' => 20,
                 'is_active' => true,

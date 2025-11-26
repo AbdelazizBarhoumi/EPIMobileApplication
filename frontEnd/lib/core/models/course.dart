@@ -2,6 +2,8 @@
 // COURSE MODEL - Represents a university course
 // ============================================================================
 
+import 'package:flutter/foundation.dart';
+
 class Course {
   final int id;
   final String courseCode;
@@ -48,6 +50,14 @@ class Course {
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
+    // Handle nested grades structure from API
+    final grades = json['grades'] as Map<String, dynamic>?;
+    
+    debugPrint('Course.fromJson: Parsing course ${json['course_code']} - grades present: ${grades != null}');
+    if (grades != null) {
+      debugPrint('Course.fromJson: Grades data - cc: ${grades['cc_score']}, ds: ${grades['ds_score']}, exam: ${grades['exam_score']}, final: ${grades['final_grade']}, letter: ${grades['letter_grade']}');
+    }
+    
     return Course(
       id: json['id'] as int,
       courseCode: json['course_code'] as String,
@@ -58,11 +68,11 @@ class Course {
       schedule: json['schedule'] as String?,
       room: json['room'] as String?,
       academicCalendarId: json['academic_calendar_id'] as int?,
-      ccScore: json['cc_score'] != null ? (json['cc_score'] as num).toDouble() : null,
-      dsScore: json['ds_score'] != null ? (json['ds_score'] as num).toDouble() : null,
-      examScore: json['exam_score'] != null ? (json['exam_score'] as num).toDouble() : null,
-      finalGrade: json['final_grade'] != null ? (json['final_grade'] as num).toDouble() : null,
-      letterGrade: json['letter_grade'] as String?,
+      ccScore: grades != null && grades['cc_score'] != null ? _parseDouble(grades['cc_score']) : null,
+      dsScore: grades != null && grades['ds_score'] != null ? _parseDouble(grades['ds_score']) : null,
+      examScore: grades != null && grades['exam_score'] != null ? _parseDouble(grades['exam_score']) : null,
+      finalGrade: grades != null && grades['final_grade'] != null ? _parseDouble(grades['final_grade']) : null,
+      letterGrade: grades != null ? grades['letter_grade'] as String? : null,
       status: json['status'] as String?,
       programCourseId: json['program_course_id'] as int?,
       yearTaken: json['year_taken'] as int?,
@@ -103,4 +113,12 @@ class Course {
   int get ccWeight => 30;
   int get dsWeight => 20;
   int get examWeight => 40;
+  
+  // Helper method to safely parse double values that might be strings
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
 }

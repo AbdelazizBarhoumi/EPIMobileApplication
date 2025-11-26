@@ -18,6 +18,7 @@ class GradesPageDynamic extends StatefulWidget {
 
 class _GradesPageDynamicState extends State<GradesPageDynamic> {
   int _selectedYear = 1;
+  int? _selectedSemester; // null means show all semesters
 
   @override
   void initState() {
@@ -26,16 +27,23 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
   }
 
   void _loadData() {
+    debugPrint('GradesPageDynamic: _loadData called');
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('GradesPageDynamic: addPostFrameCallback executing');
       final studentController = context.read<StudentController>();
       final gradeController = context.read<GradeController>();
       
       if (studentController.student != null) {
+        debugPrint('GradesPageDynamic: Student found, loading transcript for ID: ${studentController.student!.id}');
         gradeController.loadTranscript(studentController.student!.id);
       } else {
+        debugPrint('GradesPageDynamic: No student found, loading profile first');
         studentController.loadProfile().then((_) {
           if (studentController.student != null) {
+            debugPrint('GradesPageDynamic: Profile loaded, loading transcript for ID: ${studentController.student!.id}');
             gradeController.loadTranscript(studentController.student!.id);
+          } else {
+            debugPrint('GradesPageDynamic: Profile load failed, no student data');
           }
         });
       }
@@ -69,6 +77,21 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
       ),
       body: Consumer<GradeController>(
         builder: (context, controller, child) {
+          debugPrint('GradesPageDynamic: Consumer builder called, state: ${controller.state}');
+          debugPrint('GradesPageDynamic: Transcript data: ${controller.transcript}');
+          if (controller.transcript != null) {
+            debugPrint('GradesPageDynamic: Transcript years: ${controller.transcript!.transcript.map((yt) => yt.year)}');
+            controller.transcript!.transcript.forEach((yearTranscript) {
+              debugPrint('GradesPageDynamic: Year ${yearTranscript.year} has ${yearTranscript.semesters.length} semesters, GPA: ${yearTranscript.yearGpa}');
+              yearTranscript.semesters.forEach((semester) {
+                debugPrint('GradesPageDynamic: Semester ${semester.semester} has ${semester.courses.length} courses');
+                semester.courses.forEach((course) {
+                  debugPrint('GradesPageDynamic: Course - ${course.courseName} (${course.courseCode}): ${course.letterGrade}');
+                });
+              });
+            });
+          }
+
           // Loading state
           if (controller.state == GradeLoadingState.loading) {
             return Center(
@@ -85,6 +108,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
 
           // Error state
           if (controller.state == GradeLoadingState.error) {
+            debugPrint('GradesPageDynamic: Showing error state, error: ${controller.errorMessage}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -122,6 +146,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
           // No data
           final transcript = controller.transcript;
           if (transcript == null) {
+            debugPrint('GradesPageDynamic: Transcript is null, showing no grades message');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -142,15 +167,19 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
   }
 
   Widget _buildTranscriptView(Transcript transcript) {
+    debugPrint('GradesPageDynamic: _buildTranscriptView called for selected year: $_selectedYear');
     final availableYears = transcript.transcript.map((yt) => yt.year).toList();
+    debugPrint('GradesPageDynamic: Available years: $availableYears');
     if (availableYears.isNotEmpty && !availableYears.contains(_selectedYear)) {
       _selectedYear = availableYears.first;
+      debugPrint('GradesPageDynamic: Updated selected year to: $_selectedYear');
     }
 
     final selectedYearTranscript = transcript.transcript.firstWhere(
       (yt) => yt.year == _selectedYear,
       orElse: () => YearTranscript(year: _selectedYear, semesters: []),
     );
+    debugPrint('GradesPageDynamic: Selected year transcript has ${selectedYearTranscript.semesters.length} semesters');
 
     return SingleChildScrollView(
       child: Column(
@@ -161,6 +190,9 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
           // Year Selection
           _buildYearSelector(availableYears),
           
+          // Semester Selection
+          _buildSemesterSelector(selectedYearTranscript.semesters),
+          
           // Grading Info
           _buildGradingInfo(),
           
@@ -168,7 +200,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
           if (selectedYearTranscript.semesters.isEmpty)
             _buildNoGradesMessage()
           else
-            ...selectedYearTranscript.semesters.map((sem) => _buildSemesterSection(sem)),
+            ..._getFilteredSemesters(selectedYearTranscript.semesters).map((sem) => _buildSemesterSection(sem)),
           
           const SizedBox(height: 20),
         ],
@@ -198,7 +230,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildGPACircle('Overall GPA', transcript.overallGpa, Colors.amber[800]!),
+              _buildGPACircle('Overall GPA', transcript.overallGpa ?? 0.0, Colors.amber[800]!),
               _buildGPACircle('Year $_selectedYear GPA', currentYearGpa, Colors.green),
             ],
           ),
@@ -214,12 +246,12 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
               children: [
                 _buildStatItem(
                   icon: Icons.school,
-                  value: "${transcript.creditsTaken}",
+                  value: "${transcript.creditsTaken ?? 0}",
                   label: "Credits",
                 ),
                 _buildStatItem(
                   icon: Icons.trending_up,
-                  value: "${transcript.creditsRemaining}",
+                  value: "${transcript.creditsRemaining ?? 0}",
                   label: "Remaining",
                 ),
                 _buildStatItem(
@@ -260,6 +292,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
                 child: Text('Year $year', style: TextStyle(fontSize: 14, color: Colors.red[900])),
               )).toList(),
               onChanged: (value) {
+                debugPrint('GradesPageDynamic: Year changed to $value');
                 setState(() {
                   _selectedYear = value!;
                 });
@@ -298,7 +331,62 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
     );
   }
 
+  Widget _buildSemesterSelector(List<SemesterTranscript> semesters) {
+    if (semesters.isEmpty) return Container();
+
+    final availableSemesters = semesters.map((s) => s.semester).toSet().toList()..sort();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Filter by Semester",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red[900]),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: DropdownButton<int?>(
+              value: _selectedSemester,
+              underline: Container(),
+              items: [
+                DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('All Semesters', style: TextStyle(fontSize: 14, color: Colors.red[900])),
+                ),
+                ...availableSemesters.map((semester) => DropdownMenuItem<int?>(
+                  value: semester,
+                  child: Text('Semester $semester', style: TextStyle(fontSize: 14, color: Colors.red[900])),
+                )),
+              ],
+              onChanged: (value) {
+                debugPrint('GradesPageDynamic: Semester changed to $value');
+                setState(() {
+                  _selectedSemester = value;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<SemesterTranscript> _getFilteredSemesters(List<SemesterTranscript> semesters) {
+    if (_selectedSemester == null) {
+      return semesters; // Show all semesters
+    }
+    return semesters.where((s) => s.semester == _selectedSemester).toList();
+  }
+
   Widget _buildSemesterSection(SemesterTranscript semester) {
+    debugPrint('GradesPageDynamic: Building semester ${semester.semester} with ${semester.courses.length} courses');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -321,10 +409,11 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
   }
 
   Widget _buildCourseGradeCard(Grade grade) {
+    debugPrint('GradesPageDynamic: Building course card for ${grade.courseName} (${grade.courseCode}): ${grade.letterGrade}');
     final totalGrade = grade.finalGrade ?? 0.0;
     final gradeColor = _getGradeColor(totalGrade);
     final colors = [Colors.blue, Colors.purple, Colors.orange, Colors.teal, Colors.indigo];
-    final color = colors[grade.courseId % colors.length];
+    final color = colors[(grade.courseId ?? grade.courseCode.hashCode) % colors.length];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -482,6 +571,7 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
   }
 
   void _showDetailedGrades(Grade grade) {
+    debugPrint('GradesPageDynamic: Showing detailed grades for ${grade.courseName} (${grade.courseCode})');
     final totalGrade = grade.finalGrade ?? 0.0;
     final gradeColor = _getGradeColor(totalGrade);
 
@@ -509,6 +599,25 @@ class _GradesPageDynamicState extends State<GradesPageDynamic> {
                 children: [
                   Text(grade.courseName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red[900])),
                   Text("${grade.courseCode} • ${grade.credits} Credits", style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                  if (grade.yearTaken != null && grade.semesterTaken != null)
+                    Text("Year ${grade.yearTaken}, Semester ${grade.semesterTaken}", style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  if (grade.status != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: grade.status == 'completed' ? Colors.green[100] : Colors.orange[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        grade.status!.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: grade.status == 'completed' ? Colors.green[800] : Colors.orange[800],
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(24),

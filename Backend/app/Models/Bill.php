@@ -51,7 +51,7 @@ class Bill extends Model
      */
     public function getIsOverdueAttribute(): bool
     {
-        return $this->status === 'pending' && $this->due_date->isPast();
+        return now()->greaterThan($this->due_date) && !in_array($this->status, ['paid', 'cancelled']);
     }
 
     /**

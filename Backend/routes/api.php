@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\ClubController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\AcademicCalendarController;
 use App\Http\Controllers\MajorController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ScheduleController;
@@ -43,6 +44,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/dashboard', [StudentController::class, 'dashboard']);
         Route::get('/courses', [StudentController::class, 'courses']);
         Route::get('/attendance', [StudentController::class, 'attendance']);
+    });
+
+    // Academic Calendar routes
+    Route::prefix('academic-calendars')->group(function () {
+        Route::get('/', [AcademicCalendarController::class, 'index']);
+        Route::get('/active', [AcademicCalendarController::class, 'active']);
+        Route::get('/year/{year}', [AcademicCalendarController::class, 'byYear']);
+        Route::get('/upcoming', [AcademicCalendarController::class, 'upcoming']);
     });
 
     // Course routes

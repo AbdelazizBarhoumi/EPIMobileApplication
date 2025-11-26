@@ -23,25 +23,38 @@ class ScheduleController extends ChangeNotifier {
 
   /// Load student's weekly schedule
   Future<void> loadMySchedule() async {
-    print('📅 ScheduleController: Loading my schedule...');
+    debugPrint('📅 ScheduleController: loadMySchedule called');
     _state = ScheduleLoadingState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      debugPrint('📅 ScheduleController: Calling _scheduleService.getMySchedule()');
       _schedule = await _scheduleService.getMySchedule();
-      print('📅 ScheduleController: Schedule loaded');
-      print('📅 ScheduleController: Days with classes: ${_schedule?.schedule.keys.join(", ")}');
-      int totalSessions = _schedule?.schedule.values.fold<int>(0, (sum, sessions) => sum + sessions.length) ?? 0;
-      print('📅 ScheduleController: Total sessions: $totalSessions');
+      debugPrint('📅 ScheduleController: Schedule loaded successfully');
+      if (_schedule != null) {
+        debugPrint('📅 ScheduleController: Schedule days: ${_schedule!.schedule.keys}');
+        _schedule!.schedule.forEach((day, sessions) {
+          debugPrint('📅 ScheduleController: $day has ${sessions.length} sessions');
+          sessions.forEach((session) {
+            debugPrint('📅 ScheduleController:   - ${session.courseName} (${session.startTime}-${session.endTime}) in ${session.room}');
+          });
+        });
+        int totalSessions = _schedule!.schedule.values.fold<int>(0, (sum, sessions) => sum + sessions.length);
+        debugPrint('📅 ScheduleController: Total sessions across all days: $totalSessions');
+      } else {
+        debugPrint('📅 ScheduleController: Schedule is null');
+      }
       _state = ScheduleLoadingState.loaded;
+      debugPrint('📅 ScheduleController: State set to loaded');
     } catch (e) {
-      print('📅 ScheduleController: ERROR loading schedule: $e');
+      debugPrint('📅 ScheduleController: ERROR loading schedule: $e');
       _state = ScheduleLoadingState.error;
       _errorMessage = e.toString();
       rethrow;
     }
     notifyListeners();
+    debugPrint('📅 ScheduleController: Notified listeners');
   }
 
   /// Load schedule for specific major/year/semester

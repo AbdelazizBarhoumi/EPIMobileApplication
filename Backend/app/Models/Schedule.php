@@ -98,11 +98,13 @@ class Schedule extends Model
     public static function getTimeSlots(): array
     {
         return [
-            1 => ['start' => '08:00', 'end' => '09:30'],
-            2 => ['start' => '10:00', 'end' => '11:30'],
+            1 => ['start' => '08:30', 'end' => '10:00'],
+            2 => ['start' => '10:15', 'end' => '11:45'],
             3 => ['start' => '12:00', 'end' => '13:30'],
-            4 => ['start' => '14:00', 'end' => '15:30'],
-            5 => ['start' => '16:00', 'end' => '17:30'],
+            4 => ['start' => '13:45', 'end' => '15:15'],
+            5 => ['start' => '15:30', 'end' => '17:00'],
+            6 => ['start' => '17:15', 'end' => '18:45'],
+            7 => ['start' => '19:00', 'end' => '20:30'],
         ];
     }
 

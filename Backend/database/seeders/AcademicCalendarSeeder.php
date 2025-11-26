@@ -22,8 +22,8 @@ class AcademicCalendarSeeder extends Seeder
                 'important_dates' => [
                     'classes_begin' => '2025-09-01',
                     'add_drop_deadline' => '2025-09-15',
-                    'midterms' => '2025-10-20',
-                    'thanksgiving_break' => '2025-11-23',
+                    'midterms' => ['start' => '2025-11-15', 'end' => '2025-11-25'],
+                    'thanksgiving_break' => ['start' => '2025-11-23', 'end' => '2025-11-27'],
                     'finals_begin' => '2025-12-10',
                     'finals_end' => '2025-12-20',
                 ],
@@ -37,8 +37,8 @@ class AcademicCalendarSeeder extends Seeder
                 'important_dates' => [
                     'classes_begin' => '2026-01-15',
                     'add_drop_deadline' => '2026-01-29',
-                    'spring_break' => '2026-03-15',
-                    'midterms' => '2026-03-01',
+                    'spring_break' => ['start' => '2026-03-15', 'end' => '2026-03-22'],
+                    'midterms' => ['start' => '2026-03-01', 'end' => '2026-03-06'],
                     'finals_begin' => '2026-05-05',
                     'finals_end' => '2026-05-15',
                 ],
@@ -53,7 +53,7 @@ class AcademicCalendarSeeder extends Seeder
                     'classes_begin' => '2026-06-01',
                     'add_drop_deadline' => '2026-06-08',
                     'independence_day' => '2026-07-04',
-                    'finals_week' => '2026-08-08',
+                    'finals_week' => ['start' => '2026-08-08', 'end' => '2026-08-15'],
                 ],
             ],
         ];
