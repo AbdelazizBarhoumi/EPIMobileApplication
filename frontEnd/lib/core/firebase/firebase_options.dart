@@ -15,10 +15,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// );
 /// ```
 class DefaultFirebaseOptions {
-  static String get _apiKey => dotenv.env['FIREBASE_API_KEY'] ?? '';
-  static String get _projectId => dotenv.env['FIREBASE_PROJECT_ID'] ?? '';
-  static String get _messagingSenderId => dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '';
-  static String get _appId => dotenv.env['FIREBASE_APP_ID'] ?? '';
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
@@ -45,51 +41,51 @@ class DefaultFirebaseOptions {
   }
 
   static FirebaseOptions get web => FirebaseOptions(
-    apiKey: _apiKey,
-    appId: '1:67907098202:web:f8bc28435a01e23fae6a63',
-    messagingSenderId: _messagingSenderId,
-    projectId: _projectId,
-    authDomain: '$_projectId.firebaseapp.com',
-    databaseURL: 'https://$_projectId-default-rtdb.europe-west1.firebasedatabase.app',
-    storageBucket: '$_projectId.firebasestorage.app',
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_WEB_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN']!,
+    databaseURL: dotenv.env['FIREBASE_DATABASE_URL']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
     measurementId: 'your-measurement-id',
   );
 
   static FirebaseOptions get android => FirebaseOptions(
-    apiKey: _apiKey,
-    appId: _appId,
-    messagingSenderId: _messagingSenderId,
-    projectId: _projectId,
-    databaseURL: 'https://$_projectId-default-rtdb.europe-west1.firebasedatabase.app',
-    storageBucket: '$_projectId.firebasestorage.app',
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_ANDROID_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    databaseURL: dotenv.env['FIREBASE_DATABASE_URL']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
   );
 
   static FirebaseOptions get ios => FirebaseOptions(
-    apiKey: _apiKey,
-    appId: '1:67907098202:ios:f8bc28435a01e23fae6a63',
-    messagingSenderId: _messagingSenderId,
-    projectId: _projectId,
-    databaseURL: 'https://$_projectId-default-rtdb.europe-west1.firebasedatabase.app',
-    storageBucket: '$_projectId.firebasestorage.app',
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_IOS_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    databaseURL: dotenv.env['FIREBASE_DATABASE_URL']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
     iosBundleId: 'com.epi.mobileApplicaition',
   );
 
   static FirebaseOptions get macos => FirebaseOptions(
-    apiKey: _apiKey,
-    appId: '1:67907098202:macos:f8bc28435a01e23fae6a63',
-    messagingSenderId: _messagingSenderId,
-    projectId: _projectId,
-    databaseURL: 'https://$_projectId-default-rtdb.europe-west1.firebasedatabase.app',
-    storageBucket: '$_projectId.firebasestorage.app',
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_MACOS_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    databaseURL: dotenv.env['FIREBASE_DATABASE_URL']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
     iosBundleId: 'com.epi.mobileApplicaition',
   );
 
   static FirebaseOptions get windows => FirebaseOptions(
-    apiKey: _apiKey,
-    appId: '1:67907098202:windows:f8bc28435a01e23fae6a63',
-    messagingSenderId: _messagingSenderId,
-    projectId: _projectId,
-    databaseURL: 'https://$_projectId-default-rtdb.europe-west1.firebasedatabase.app',
-    storageBucket: '$_projectId.firebasestorage.app',
+    apiKey: dotenv.env['FIREBASE_API_KEY']!,
+    appId: dotenv.env['FIREBASE_WINDOWS_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    databaseURL: dotenv.env['FIREBASE_DATABASE_URL']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
   );
 }

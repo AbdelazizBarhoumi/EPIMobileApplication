@@ -14,7 +14,10 @@ API_KEY = "AIzaSyC6kx0jX0Jtp2EqSxQUnl2_-yIy4OeqYko"  # From firebase_options.dar
 
 # OneSignal configuration
 ONESIGNAL_APP_ID = "e66b5607-740b-4f85-9096-4b59eeb3b970"
-ONESIGNAL_REST_KEY = "os_v2_app_4zvvmb3ubnhyleewjnm65m5zod6s67jug7qupv4cvynitcsryari4npmdv4nm56dwiajzm6uexnohiqo6dxycv5rcvjslmm27miyjpy"
+# NOTE: You need to get your REST API key from OneSignal dashboard
+# Go to https://app.onesignal.com > Your App > Settings > Keys & IDs
+# Use the "REST API Key" (not the user auth key)
+ONESIGNAL_REST_KEY = "os_v2_app_4zvvmb3ubnhyleewjnm65m5zoboizlie5zleoim3kri6l4rr2s2uavvxzs62bsjkc4ycngf5zpub46f6nmeikpjyyk4wztxhwkqyx6a"
 
 # Test data (update these with actual values)
 CONVERSATION_ID = "RbTHlucHbN9213Gi6R7P"  # The conversation you're testing

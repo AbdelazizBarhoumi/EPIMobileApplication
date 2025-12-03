@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ClubController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\AcademicCalendarController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\MajorController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ScheduleController;
@@ -128,5 +129,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/course/{courseId}', [AttendanceController::class, 'getCourseAttendance']);
         Route::post('/mark', [AttendanceController::class, 'markAttendance']);
         Route::post('/bulk-mark', [AttendanceController::class, 'bulkMarkAttendance']);
+    });
+
+    // Notification routes (OneSignal)
+    Route::prefix('notifications')->group(function () {
+        Route::post('/send', [NotificationController::class, 'send']);
+        Route::post('/send-by-user-id', [NotificationController::class, 'sendByUserId']);
     });
 });

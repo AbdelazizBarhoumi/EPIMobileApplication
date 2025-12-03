@@ -1,15 +1,13 @@
 // lib/core/services/onesignal_service.dart
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OneSignalService {
-  static String get _appId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
-  static String get _restApiKey => dotenv.env['ONESIGNAL_REST_API_KEY'] ?? '';
+  // Load OneSignal App ID from environment variables
+  static String get _appId => dotenv.env['ONESIGNAL_APP_ID']!;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -55,42 +53,9 @@ class OneSignalService {
     }
   }
 
-  /// Send notification to a specific user via OneSignal REST API
-  Future<void> sendNotification({
-    required String playerId,
-    required String title,
-    required String message,
-    Map<String, dynamic>? additionalData,
-  }) async {
-    try {
-      final url = Uri.parse('https://onesignal.com/api/v1/notifications');
-
-      final body = {
-        'app_id': _appId,
-        'include_player_ids': [playerId],
-        'headings': {'en': title},
-        'contents': {'en': message},
-        'data': additionalData ?? {},
-      };
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic $_restApiKey',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        debugPrint('✅ OneSignal notification sent successfully');
-      } else {
-        debugPrint('❌ Failed to send OneSignal notification: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('❌ Error sending OneSignal notification: $e');
-    }
-  }
+  /// Note: Notification sending is now handled by the backend API
+  /// for security reasons (REST API key should never be in frontend code).
+  /// Use the backend endpoint: POST /api/notifications/send
 
   /// Store OneSignal player ID in Firestore for the current user
   Future<void> _storePlayerId(String playerId) async {
@@ -101,9 +66,9 @@ class OneSignalService {
         return;
       }
 
-      // Set external user ID in OneSignal
-      await OneSignal.login(user.uid);
-      debugPrint('✅ OneSignal external user ID set: ${user.uid}');
+      // Set external user ID in OneSignal (login with Firebase UID)
+      OneSignal.login(user.uid);
+      debugPrint('✅ OneSignal logged in with external user ID: ${user.uid}');
 
       await _firestore.collection('users').doc(user.uid).set({
         'oneSignalPlayerId': playerId,

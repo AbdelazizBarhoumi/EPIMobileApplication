@@ -11,7 +11,7 @@ import 'shared/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables FIRST
+  // Load environment variables first
   await dotenv.load(fileName: ".env");
 
   // Initialize Firebase

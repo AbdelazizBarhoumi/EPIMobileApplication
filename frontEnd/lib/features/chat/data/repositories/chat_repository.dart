@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/services/onesignal_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 
@@ -23,8 +24,11 @@ class FirebaseChatRepository implements ChatRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final OneSignalService _oneSignalService;
+  final NotificationService _notificationService;
 
-  FirebaseChatRepository(this._firestore, this._oneSignalService) : _auth = FirebaseAuth.instance;
+  FirebaseChatRepository(this._firestore, this._oneSignalService) 
+    : _auth = FirebaseAuth.instance,
+      _notificationService = NotificationService();
 
   @override
   Stream<List<ConversationModel>> getConversations(String userId) {
@@ -123,28 +127,28 @@ class FirebaseChatRepository implements ChatRepository {
       
       debugPrint('✅ Sender conversation updated successfully!');
 
-      // Step 4: Send notifications to other participants
+      // Step 4: Send notifications to other participants via backend API
       debugPrint('📝 Step 4: Sending notifications to other participants...');
       final otherParticipantIds = participantIds.where((id) => id != message.senderId).toList();
       
-      for (final participantId in otherParticipantIds) {
-        final playerId = await _oneSignalService.getUserPlayerId(participantId);
-        if (playerId != null) {
-          await _oneSignalService.sendNotification(
-            playerId: playerId,
-            title: 'New Message',
-            message: message.content.length > 50 
-                ? '${message.content.substring(0, 50)}...' 
-                : message.content,
-            additionalData: {
-              'type': 'chat',
-              'conversationId': conversationId,
-              'senderId': message.senderId,
-            },
-          );
-          debugPrint('✅ Notification sent to participant: $participantId');
+      if (otherParticipantIds.isNotEmpty) {
+        final notificationSent = await _notificationService.sendNotificationByUserIds(
+          userIds: otherParticipantIds,
+          title: 'New Message',
+          message: message.content.length > 50 
+              ? '${message.content.substring(0, 50)}...' 
+              : message.content,
+          data: {
+            'type': 'chat',
+            'conversationId': conversationId,
+            'senderId': message.senderId,
+          },
+        );
+        
+        if (notificationSent) {
+          debugPrint('✅ Notifications sent to ${otherParticipantIds.length} participants');
         } else {
-          debugPrint('⚠️ No player ID found for participant: $participantId');
+          debugPrint('⚠️ Failed to send notifications (non-critical - message was sent)');
         }
       }
       
