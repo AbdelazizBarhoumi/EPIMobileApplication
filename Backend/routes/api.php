@@ -46,7 +46,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/courses', [StudentController::class, 'courses']);
         Route::get('/attendance', [StudentController::class, 'attendance']);
     });
+});
 
+// Students list endpoint (for admin notifications) - temporarily unprotected for testing
+Route::get('/students', [StudentController::class, 'index']);
+Route::get('/students/{id}', [StudentController::class, 'show']);
+Route::get('/majors', [MajorController::class, 'index']);
+
+Route::middleware(['auth:sanctum'])->group(function () {
     // Academic Calendar routes
     Route::prefix('academic-calendars')->group(function () {
         Route::get('/', [AcademicCalendarController::class, 'index']);
@@ -131,9 +138,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/bulk-mark', [AttendanceController::class, 'bulkMarkAttendance']);
     });
 
-    // Notification routes (OneSignal)
+    // Notification routes (OneSignal + Firestore)
+    // Push: OneSignal | History: Firestore | NO MySQL needed
     Route::prefix('notifications')->group(function () {
         Route::post('/send', [NotificationController::class, 'send']);
-        Route::post('/send-by-user-id', [NotificationController::class, 'sendByUserId']);
+        Route::get('/templates', [NotificationController::class, 'templates']);
     });
 });

@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/notification_model.dart';
 
+/// Repository interface for notification data access
 abstract class NotificationRepository {
   Stream<List<NotificationModel>> getNotifications(String userId);
   Future<void> markAsRead(String userId, String notificationId);
@@ -10,6 +11,12 @@ abstract class NotificationRepository {
   Future<void> addNotification(String userId, NotificationModel notification);
 }
 
+/// Firestore implementation of NotificationRepository
+/// 
+/// Data path: notifications/{userId}/items/{notificationId}
+/// 
+/// Backend (Laravel) writes here via Firestore REST API when sending notifications.
+/// Frontend reads from here to display notification history.
 class FirebaseNotificationRepository implements NotificationRepository {
   final FirebaseFirestore _firestore;
 
@@ -23,8 +30,9 @@ class FirebaseNotificationRepository implements NotificationRepository {
         .collection('items')
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => NotificationModel.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => NotificationModel.fromFirestore(doc))
+            .toList());
   }
 
   @override
@@ -70,7 +78,6 @@ class FirebaseNotificationRepository implements NotificationRepository {
         .collection('notifications')
         .doc(userId)
         .collection('items')
-        .doc(notification.id)
-        .set(notification.toFirestore());
+        .add(notification.toFirestore());
   }
 }

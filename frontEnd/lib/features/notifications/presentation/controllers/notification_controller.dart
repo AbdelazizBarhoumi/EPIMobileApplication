@@ -27,30 +27,60 @@ class NotificationController extends ChangeNotifier {
   Stream<List<NotificationModel>>? _notificationStream;
 
   void initialize() {
+    debugPrint('\n🎯 [NOTIFICATION CONTROLLER] Initializing...');
+    debugPrint('👤 [NOTIFICATION CONTROLLER] User ID: $_userId');
     _loadNotifications();
   }
 
   void _loadNotifications() {
+    debugPrint('\n📡 [NOTIFICATION CONTROLLER] Loading notifications...');
+    debugPrint('👤 [NOTIFICATION CONTROLLER] User ID: $_userId');
+    
     _state = NotificationState.loading;
     notifyListeners();
 
     try {
+      debugPrint('🔄 [NOTIFICATION CONTROLLER] Creating notification stream...');
       _notificationStream = _notificationService.getNotifications(_userId);
 
       // Listen to real-time updates
       _notificationStream!.listen(
         (notifications) {
+          debugPrint('\n📬 [NOTIFICATION CONTROLLER] Stream update received');
+          debugPrint('📊 [NOTIFICATION CONTROLLER] Notification count: ${notifications.length}');
+          
+          if (notifications.isEmpty) {
+            debugPrint('⚠️ [NOTIFICATION CONTROLLER] No notifications in stream');
+          } else {
+            debugPrint('✅ [NOTIFICATION CONTROLLER] Notifications loaded:');
+            for (var i = 0; i < notifications.length; i++) {
+              final n = notifications[i];
+              debugPrint('   ${i + 1}. ${n.title} (${n.type.name}, ${n.read ? "read" : "unread"})');
+            }
+          }
+          
           _notifications = notifications;
           _state = NotificationState.loaded;
+          debugPrint('✅ [NOTIFICATION CONTROLLER] State changed to: loaded');
           notifyListeners();
         },
         onError: (error) {
+          debugPrint('\n❌ [NOTIFICATION CONTROLLER] Stream error occurred');
+          debugPrint('❌ [NOTIFICATION CONTROLLER] Error: $error');
+          debugPrint('❌ [NOTIFICATION CONTROLLER] Error type: ${error.runtimeType}');
+          
           _error = error.toString();
           _state = NotificationState.error;
           notifyListeners();
         },
       );
+      
+      debugPrint('✅ [NOTIFICATION CONTROLLER] Stream listener attached');
     } catch (e) {
+      debugPrint('\n❌ [NOTIFICATION CONTROLLER] Exception during setup');
+      debugPrint('❌ [NOTIFICATION CONTROLLER] Exception: $e');
+      debugPrint('❌ [NOTIFICATION CONTROLLER] Exception type: ${e.runtimeType}');
+      
       _error = e.toString();
       _state = NotificationState.error;
       notifyListeners();

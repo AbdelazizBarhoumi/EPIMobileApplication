@@ -3,6 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../features/notifications/data/models/notification_model.dart';
 import '../../../features/notifications/data/repositories/notification_repository.dart';
 
+/// Service for reading notification history from Firestore
+/// 
+/// Architecture:
+/// - Backend (Laravel) sends push via OneSignal + writes to Firestore
+/// - This service reads from Firestore to display notification history
+/// - NO sending from frontend - all notifications sent via backend API
 class FirebaseNotificationService {
   final NotificationRepository _repository;
 
@@ -29,20 +35,9 @@ class FirebaseNotificationService {
     await _repository.deleteNotification(userId, notificationId);
   }
 
-  /// Add a new notification (typically called from backend/admin)
-  Future<void> addNotification(String userId, NotificationModel notification) async {
-    await _repository.addNotification(userId, notification);
-  }
-
   /// Get unread notifications count
   Stream<int> getUnreadCount(String userId) {
     return getNotifications(userId).map((notifications) =>
         notifications.where((notification) => !notification.read).length);
-  }
-
-  /// Get notifications by type
-  Stream<List<NotificationModel>> getNotificationsByType(String userId, NotificationType type) {
-    return getNotifications(userId).map((notifications) =>
-        notifications.where((notification) => notification.type == type).toList());
   }
 }

@@ -17,6 +17,7 @@ import '../pages/courses_page.dart';
 import '../pages/news_page.dart';
 import '../pages/year_schedule_page.dart';
 import '../pages/firebase_test_page.dart';
+import '../features/notifications/presentation/pages/admin_notification_panel.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -36,6 +37,7 @@ class AppRoutes {
   static const String news = '/news';
   static const String yearSchedule = '/year-schedule';
   static const String firebaseTest = '/firebase-test';
+  static const String adminNotifications = '/admin-notifications';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (context) => const LoginPage(),
@@ -55,6 +57,7 @@ class AppRoutes {
     news: (context) => const NewsPage(),
     yearSchedule: (context) => const YearSchedulePage(),
     firebaseTest: (context) => const FirebaseTestPage(),
+    adminNotifications: (context) => const AdminNotificationPanel(),
   };
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {

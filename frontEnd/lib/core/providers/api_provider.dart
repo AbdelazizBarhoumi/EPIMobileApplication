@@ -48,6 +48,11 @@ class ApiProvider {
     Provider<ApiClient>(
       create: (_) => createApiClient(),
     ),
+    
+    // OneSignal Service (singleton)
+    Provider<OneSignalService>(
+      create: (_) => OneSignalService(),
+    ),
 
     // ========================================================================
     // SERVICES
@@ -107,9 +112,14 @@ class ApiProvider {
       create: (context) => AuthController(context.read<AuthService>()),
       update: (_, authService, authController) => authController ?? AuthController(authService),
     ),
-    ChangeNotifierProxyProvider<StudentService, StudentController>(
-      create: (context) => StudentController(context.read<StudentService>()),
-      update: (_, service, controller) => controller ?? StudentController(service),
+    // Refactor: StudentController now receives OneSignalService to set external user ID on profile load
+    ChangeNotifierProxyProvider2<StudentService, OneSignalService, StudentController>(
+      create: (context) => StudentController(
+        context.read<StudentService>(),
+        context.read<OneSignalService>(),
+      ),
+      update: (_, studentService, oneSignalService, controller) => 
+        controller ?? StudentController(studentService, oneSignalService),
     ),
     ChangeNotifierProxyProvider<GradeService, GradeController>(
       create: (context) => GradeController(context.read<GradeService>()),

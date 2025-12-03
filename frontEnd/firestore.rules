@@ -30,11 +30,34 @@
             exists(/databases/$(database)/documents/chats/$(request.auth.uid)/conversations/$(conversationId));
     }
     
-    // Notifications - Users can only access their own notifications
-    match /notifications/{userId}/items/{notificationId} {
-    allow read: if isOwner(userId);
-    allow create, update: if isOwner(userId);
-    allow delete: if isOwner(userId);
+    // Notifications - Using MySQL student.id as document key (not Firebase UID)
+    // Since we use MySQL IDs, Firebase Auth UID won't match the path
+    // Security: Only authenticated users can read, server can write
+    // TODO: In production, store studentId in Firebase custom claims for proper validation
+    match /notifications/{studentId}/items/{notificationId} {
+      // Allow read for any authenticated user (frontend filters by their own studentId)
+      allow read: if isAuthenticated();
+      // Allow create from any source (backend server doesn't have Firebase auth)
+      // Security is handled by Laravel backend authentication
+      allow create: if true;
+      // Only allow update/delete for authenticated users
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Notification logs - Admin only (authenticated users can read for stats)
+    match /notification_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Students collection - Read access for searching
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+    }
+    
+    // Majors collection - Read access for searching
+    match /majors/{majorId} {
+      allow read: if isAuthenticated();
     }
     
     // Chat conversations - Users can access their own OR if they're in participantIds

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 // Import all pages - Using dynamic versions
 import 'pages/profile_page_dynamic.dart';
@@ -21,6 +22,8 @@ import 'pages/news_page.dart';
 import 'pages/year_schedule_page.dart';
 import 'pages/courses_page_dynamic.dart';
 import 'features/chat/presentation/pages/chat_list_page.dart';
+import 'features/notifications/presentation/pages/notifications_page.dart' as notif;
+import 'features/notifications/presentation/controllers/notification_controller.dart';
 // Import controllers and models
 import 'core/controllers/event_controller.dart';
 import 'core/controllers/student_controller.dart';
@@ -59,11 +62,60 @@ class _HomePageState extends State<HomePage> {
 
   /// Bottom navigation bar controller
   final NotchBottomBarController _controller = NotchBottomBarController();
+  
+  /// Notification controller for unread count badge
+  NotificationController? _notificationController;
+  bool _notificationControllerInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initNotificationListenerIfNeeded();
+  }
+
+  /// Initialize notification listener to track unread count
+  void _initNotificationListenerIfNeeded() {
+    if (_notificationControllerInitialized) return;
+    
+    final studentController = context.read<StudentController>();
+    final student = studentController.student;
+    
+    if (student != null) {
+      _notificationControllerInitialized = true;
+      debugPrint('🔔 [HOME] Initializing notification controller for student ID: ${student.id}');
+      
+      _notificationController = NotificationController(
+        student.id.toString(),
+        FirebaseFirestore.instance,
+      );
+      _notificationController!.addListener(() {
+        if (mounted) {
+          debugPrint('🔔 [HOME] Notification update - Unread count: ${_notificationController?.unreadCount}');
+          setState(() {});
+        }
+      });
+      _notificationController!.initialize();
+    } else {
+      // Student not loaded yet, try again after profile loads
+      debugPrint('🔔 [HOME] Student not loaded yet, will retry...');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_notificationControllerInitialized) {
+          _initNotificationListenerIfNeeded();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationController?.dispose();
+    super.dispose();
   }
 
   void _loadData() {
@@ -169,15 +221,22 @@ class _HomePageState extends State<HomePage> {
         
         // Test local notification
         await messagingService.showTestNotification(
-          '💬 New Chat Message',
+          '� New Chat Message',
           'Dr. Ahmed Ben Ali: The assignment deadline has been extended to next week.',
+        );
+
+        // Also add notification to Firestore for testing
+        await messagingService.addTestNotificationToFirestore(
+          '� Test Notification',
+          'This is a test notification stored in Firebase Firestore. You can see it in the notifications page!',
+          type: 'general',
         );
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🔔 Test notification sent! Check your notification panel.'),
+            content: Text('🔔 Test notifications sent! Check your notification panel and notifications page.'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+            duration: Duration(seconds: 4),
           ),
         );
       } else {
@@ -195,6 +254,62 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
+  }
+
+  /// Build notification button with unread badge
+  Widget _buildNotificationButton() {
+    final unreadCount = _notificationController?.unreadCount ?? 0;
+    
+    return Stack(
+      children: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const notif.NotificationsPage(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.notifications_active),
+          color: Colors.white,
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.5),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 18,
+                minHeight: 18,
+              ),
+              child: Center(
+                child: Text(
+                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   /// Bottom navigation bar items
@@ -320,17 +435,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             Container(
               margin: const EdgeInsets.all(10),
-              child: IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const NotificationsPage()),
-                  );
-                },
-                icon: const Icon(Icons.notifications_active),
-                color: Colors.white,
-              ),
+              child: _buildNotificationButton(),
             )
           ],
         ),
@@ -1292,6 +1397,33 @@ class _HomePageState extends State<HomePage> {
               ),
               icon: const Icon(Icons.notifications_active),
               label: const Text('🔔 Test Chat Notification'),
+            ),
+          ),
+
+          // Admin Notification Panel Button (Temporary Access)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin-notifications');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+              icon: const Icon(Icons.admin_panel_settings, size: 24),
+              label: const Text(
+                '👨‍💼 Admin Notification Panel',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
 

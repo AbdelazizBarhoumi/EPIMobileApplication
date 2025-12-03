@@ -11,6 +11,9 @@ class AppColors {
   static const Color primaryLight = Color(0xFFEF5350);
   static const Color primaryLighter = Color(0xFFFFCDD2);
   static const Color primaryDark = Color(0xFFB71C1C);
+  
+  // Secondary Colors
+  static const Color secondary = Color(0xFF455A64); // Refactor: Added missing secondary color for ButtonVariant.secondary
 
   // Accent Colors
   static const Color accent = Colors.amber;
